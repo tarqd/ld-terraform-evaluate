@@ -18,7 +18,6 @@ terraform init
 In `main.tf`, you can choose which flags will be returned and their respective fallback values. You should also pass a context. Evaluation is provided by the `./ld-evaluate` module which uses [hashicorp/http](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) to request flags from LaunchDarkly.
 
 ```hcl
-data "external" "flags" {
 module "ld" {
     source = "./ld-evaluate"
     client_side_id = var.ld_client_side_id
