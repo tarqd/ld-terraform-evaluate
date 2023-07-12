@@ -1,6 +1,6 @@
 # Overview
 
-This is a simple example of evaluating LaunchDarkly feature flags within terraform using the external data provider.
+This is a simple example of evaluating LaunchDarkly feature flags within terraform using the hashicorp/http provider.
 
 # System Requirements
 
@@ -12,7 +12,7 @@ You must have the following programs installed and in your path:
 
 # Usage
 
-Since this uses the client-side evaluation endpoint, you will need to ensure that the flags are available for client-side SDKs. Check the client-side availability settings if you're getting fallback values unexpectedly. Alternatively, you can deploy LD Relay, open `scripts/ld-evaluate.sh` and replace the url passed to curl with `http://my-relay-host/sdk/evalx/context`
+Since this uses the client-side evaluation endpoint, you will need to ensure that the flags are available for client-side SDKs. Check the client-side availability settings if you're getting fallback values unexpectedly. Alternatively, you can deploy LD Relay, open `scripts/ld-evaluate.sh` and replace the url passed to curl with `http://my-relay-host/sdk/evalx/context`. You will need to pass an SDK key via the Authorization header, send the context as a response_body and change the method to POST/REPORT
 
 ## Terraform Setup
 
@@ -23,44 +23,45 @@ terraform init
 
 ## Evaluation
 
-In `main.tf`, you can choose which flags will be returned and their respective fallback values. You should also pass a context. Since the external data provider only allows single-level objects with string values, you must jsonencode the flags and context object:
+In `main.tf`, you can choose which flags will be returned and their respective fallback values. You should also pass a context. Evaluation is provided by the `./ld-evaluate` module which uses [hashicorp/http](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) to request flags from LaunchDarkly.
 
 ```hcl
 data "external" "flags" {
-    program = ["${path.module}/scripts/ld-evalulate.sh"]
-    query = {
-        client_side_id = var.ld_client_side_id
-        flags = jsonencode({
-            "enable-terraform-test": false
-        })
-        context = jsonencode({
+module "ld" {
+    source = "./ld-evaluate"
+    client_side_id = var.ld_client_side_id
+    flags = {
+        "enable-terraform-test" = true
+    }
+    context = {
             "kind": "terraform"
             "name": "${path.root}",
             "key": "${sha1(format("%s-%s", path.root, terraform.workspace))}",
             "module": "${path.module}",
             "workspace": "${terraform.workspace}",
-        })
-    }
+        }
 }
 ```
 
 ## Using flags
 
-Due to limitations in the external data resource, all values for flags will be strings. You will need to account for this when using flags. Here's an example of conditionally enabling a resource based on a boolean flag
+Evaluated flags will be returned in the `flags` output of the module
 
 ```hcl
 resource null_resource dummy {
-    count = tobool(data.external.flags.result.enable-terraform-test) ? 1 : 0
+    count = module.ld.flags.enable-terraform-test ? 1 : 0
     provisioner "local-exec" {
         command = "echo 'Terraform demo is enabled'"
     }
-   
 }
 ```
 
 You can also use number flags if you want to control how many of a resource will be created
 ```hcl
-resource null_resource foo {
-    count = tonumber(data.external.flags.result.config-number-of-foo)
+resource null_resource dummy {
+    count = module.ld.flags.config-dummy-count
+    provisioner "local-exec" {
+        command = "echo 'Terraform demo is enabled'"
+    }
 }
 ```
