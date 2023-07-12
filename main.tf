@@ -6,12 +6,11 @@ data "external" "git-branch" {
     program = ["${path.module}/scripts/git-info.sh"]
 }
 
-# External data provider only returns values as strings
-# so if a flag is a boolean you  need to check if it's "true" or "false"
+# External data provider only accepts and returns values as strings
 data "external" "flags" {
     program = ["${path.module}/scripts/ld-evalulate.sh"]
     query = {
-        client_side_id = "62ea8c4afac9b011945f6791"
+        client_side_id = var.ld_client_side_id
         flags = jsonencode({
             "enable-terraform-test": false
         })
@@ -28,9 +27,8 @@ data "external" "flags" {
 }
 
 resource null_resource dummy {
-    count = data.external.flags.result.enable-terraform-test == "true" ? 1 : 0
+    count = tobool(data.external.flags.result.enable-terraform-test) ? 1 : 0
     provisioner "local-exec" {
         command = "echo 'Terraform demo is enabled'"
     }
-   
 }

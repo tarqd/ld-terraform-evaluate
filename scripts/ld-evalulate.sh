@@ -2,8 +2,6 @@
 
 # be paranoid and exit on any error
 set -e
-
-FLAG_FILE=$(mktemp)
 INPUT="$(cat)"
 
 CLIENT_SIDE_ID=$(jq -r '.client_side_id' <<< "$INPUT")
