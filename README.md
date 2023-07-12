@@ -2,7 +2,17 @@
 
 This is a simple example of evaluating LaunchDarkly feature flags within terraform using the external data provider.
 
+# System Requirements
+
+You must have the following programs installed and in your path:
+- terraform
+- bash
+- curl
+- jq
+
 # Usage
+
+Since this uses the client-side evaluation endpoint, you will need to ensure that the flags are available for client-side SDKs. Check the client-side availability settings if you're getting fallback values unexpectedly. Alternatively, you can deploy LD Relay, open `scripts/ld-evaluate.sh` and replace the url passed to curl with `http://my-relay-host/sdk/evalx/context`
 
 ## Terraform Setup
 
